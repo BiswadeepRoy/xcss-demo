@@ -1,6 +1,4 @@
 /* Global Variables */
-let baseURL = 'http://api.openweathermap.org/data/2.5/weather?zip=';
-let apikey = '&appid=c3ed2f2ae9671c3671b587f5fbd620b9&units=metric'; // Personal API Key for OpenWeatherMap API and metric units for Celsius scale
 let userEntry = "";
 
 /* api.openweathermap.org/data/2.5/weather?zip={zip code},{country code}&appid={your api key} API link*/
@@ -13,18 +11,6 @@ let newDate = d.getMonth() + '.' + d.getDate() + '.' + d.getFullYear();
 // Event listener to add function to existing HTML DOM element
 document.getElementById('generate').addEventListener('click', generateEntryHolderContent);
 
-/* Function to GET Web API Data*/
-const getWeather = async(baseURL, apikey, zipcode) => {
-    const response = await fetch(`${baseURL}${zipcode},us${apikey}`);
-    try {
-        const responseData = await response.json();
-        return responseData.main.temp_max.toString() + " C";
-
-    } catch (error) {
-        console.log('error', error);
-    }
-}
-
 /* Function to POST data */
 const postData = async(url, responseObj = {}) => {
     const response = await fetch(url, {
@@ -36,7 +22,8 @@ const postData = async(url, responseObj = {}) => {
         body: JSON.stringify(responseObj)
     });
     try {
-        const newData = await response;
+        const newData = await response.json();
+        console.log(JSON.stringify(newData));
     } catch (error) {
         console.log('Post error', error);
     }
@@ -47,11 +34,20 @@ const updateUI = async(url) => {
     const response = await fetch(url);
     try {
         const responseData = await response.json();
-        document.getElementById('date').textContent = responseData.date;
-        document.getElementById('temp').textContent = responseData.temparature;
-        document.getElementById('content').textContent = responseData.feelings;
+        document.getElementById('entryHolder').innerHTML = `<strong>${responseData.date}</strong>
+        <br>
+        <em>${responseData.feelings}
+        </em>
+        <br>
+        <img src=${responseData.image}></img>
+        `;
 
-        console.log(responseData);
+        //"img.jpg" onerror="alert('Hacked!')"
+        console.log(`<strong>${responseData.date}</strong>
+        <br>
+        <img src=${responseData.image}></img>
+        <br><em>${responseData.feelings}
+        </em>`);
     } catch (error) {
         console.log('Get error', error);
     }
@@ -59,17 +55,13 @@ const updateUI = async(url) => {
 
 /* Function called by event listener */
 function generateEntryHolderContent(event) {
-    let zipcode = document.getElementById('zip').value;
+    let image = document.getElementById('image').value;
     userEntry = document.getElementById('feelings').value;
-
-    getWeather(baseURL, apikey, zipcode)
-        .then(function(weather) {
-            postData('/postdata', {
-                temparature: weather,
-                date: newDate,
-                feelings: userEntry
-            });
-        }).then(function() {
-            updateUI('/getdata')
-        });
+    postData('http://localhost:8000/postdata', {
+        date: newDate,
+        feelings: userEntry,
+        image: image
+    }).then(function() {
+        updateUI('http://localhost:8000/getdata')
+    });
 }
